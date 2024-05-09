@@ -6,7 +6,7 @@ async def db_start():
     cur.execute("CREATE TABLE IF NOT EXISTS accounts("
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, "    # порядковый уникальный id
                 "tg_id INTEGER, "                           # id в телеграмме
-                "type_route INTEGER, "                      # тип маршрута, 1-оффлайн, 2-онлайн
+                "type_route INTEGER, "                      # тип маршрута, 1-с описанием, 2-с геоточками
                 "chosen_rout INTEGER, "                     # выбранный маршрут
                 "get_points INTEGER, "                      # количество собранных геоточек (0 по умолчанию)
                 "bm_id INTEGER, "                           # id сообщения бота которое он изменяет
@@ -87,10 +87,10 @@ async def show_offline(): # вывод доступных оффлайн мар�
 
 async def show_online(): # вывод доступных онлайн маршрутов
     cur.execute("SELECT id, preview FROM onl_routes")
-    a = []
+    routes = []
     for rout in cur.fetchall():
-        a.append(f'{rout[0]} {rout[1]}\n')
-    return ' '.join(a)
+        routes.append(f'{rout[0]} {rout[1]}\n')
+    return ' '.join(routes)
 
 async def set_type_ofl(id): # офлайн тип
     cur.execute("UPDATE accounts SET type_route = 1 WHERE tg_id = {key}".format(key=id))
@@ -110,17 +110,20 @@ async def get_caption_off(id): # забирание описания оффла�
     cur.execute("SELECT caption FROM ofl_routes WHERE id = ?", (number, ))
     return (cur.fetchone()[0])
 
-async def get_cords(id): #получение координат конкретной точки на маршруте, общего количества точек и точек которые юзер прошёл
-    point = cur.execute("SELECT get_points FROM accounts WHERE tg_id = {key}".format(key=id)).fetchone()[0] + 1 # номер точки
+async def get_cords(id):    #получение координат следующей точки на маршруте, общего количества точек,
+                            #количества собранных точек на данный момент и номера маршрута
+    point = cur.execute("SELECT get_points FROM accounts WHERE tg_id = {key}".format(key=id)).fetchone()[0] # собранные точки
     rout = cur.execute("SELECT chosen_rout FROM accounts WHERE tg_id = {key}".format(key=id)).fetchone()[0]     # номер маршрута
-    all_points = cur.execute("SELECT number_points FROM onl_routes WHERE id = {key}".format(key=rout)).fetchone()[0]
-    lat = str(f"lat{point}")
-    lon = str(f"lon{point}")
+    all_points = cur.execute("SELECT number_points FROM onl_routes WHERE id = {key}".format(key=rout)).fetchone()[0] # общее кол во точек
+    lat = str(f"lat{point+1}")
+    lon = str(f"lon{point+1}")
     a=[]
     a.append(cur.execute("SELECT {key} FROM onl_routes WHERE id = {rout}".format(key=lat, rout=rout)).fetchone()[0])
     a.append(cur.execute("SELECT {key} FROM onl_routes WHERE id = {rout}".format(key=lon, rout=rout)).fetchone()[0])
     a.append(all_points)
     a.append(point)
+    a.append(rout)
+    print(a)
     return a
 
 async def set_bm_id(id, bm_id):
@@ -132,10 +135,10 @@ async def show_bm_id(id):
     return int(bm_id)
 
 async def plus_get_point(id): # увеличение собранных точек на 1
-    a = cur.execute("SELECT get_points FROM accounts WHERE tg_id = {key}".format(key=id)).fetchone()[0]
-    cur.execute("UPDATE accounts SET get_points = {a} WHERE tg_id = {id}".format(a=a+1, id=id))
+    get_points = cur.execute("SELECT get_points FROM accounts WHERE tg_id = {key}".format(key=id)).fetchone()[0]
+    cur.execute("UPDATE accounts SET get_points = {points} WHERE tg_id = {id}".format(points=get_points+1, id=id))
     db.commit()
-    return a
+    return get_points
 
 async def delete_prog(id): # удаляет прогресс
     cur.execute("UPDATE accounts SET type_route=0, chosen_rout=0, get_points=0, flag = 0, flag_1 = 0 WHERE tg_id={key}".format(key=id))
@@ -147,4 +150,8 @@ async def delete_route_onl(id): # удаление оффлайн маршрут
 
 async def delete_route_ofl(id): # удаление онлайн маршрута
     cur.execute("DELETE FROM ofl_routes WHERE id = {key}".format(key=id))
+    db.commit()
+
+async def reset_get_points(id):
+    cur.execute("UPDATE accounts SET get_points = 0 WHERE tg_id={key}".format(key=id))
     db.commit()

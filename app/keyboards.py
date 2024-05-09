@@ -1,6 +1,6 @@
 from aiogram.types import (ReplyKeyboardMarkup, KeyboardButton,
                            InlineKeyboardMarkup, InlineKeyboardButton)
-import const_and_texts as ct
+import app.const_and_texts as ct
 #главное меню
 main_kb = [
     [KeyboardButton(text=ct.BUTTON1),
@@ -61,9 +61,9 @@ menu = InlineKeyboardMarkup(inline_keyboard=[
 
 ])
 
-#inline проверка локации (не работает)
+#inline проверка локации
 check_loc = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text='📍 Проверить мою геопозицию', callback_data='send_location')],
+    [InlineKeyboardButton(text=ct.CB_BUTTON5, callback_data='send_location')],
 ])
 
 progress = InlineKeyboardMarkup(inline_keyboard=[
