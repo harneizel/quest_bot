@@ -72,7 +72,7 @@ async def chosen_offline(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data == 'rout_online')
 async def chosen_online(callback: CallbackQuery, state: FSMContext):
     a = await db.show_online()
-    await callback.message.answer(f'{ct.TEXT5_1}\n{a}\n{ct.TEXT5_2}', reply_markup=kb.locate)
+    await callback.message.answer(f'{ct.TEXT5_1}\n {a}\n{ct.TEXT5_2}', reply_markup=kb.locate)
     await state.set_state(Form.chosen_route_onl)
     await db.set_type_onl(int(callback.from_user.id))
 
@@ -210,7 +210,7 @@ async def cmd_my_id(message: Message):
 @router.message(F.text == ct.BUTTON1)
 async def contacts(message: Message):
     await message.answer_photo(photo='https://proza.ru/pics/2015/06/21/1155.jpg',
-                               caption='С помощью этого бота вы можете искать физические и виртуальные клады. Присутствует два режима: с описанием и со сбором геоточек.\n\nВ первом вам выдаётся описание маршрута. Во втором вы должны прийти в геоточку, отправленную ботом, и нажать на кнопку "проверить мою геопозицию". Если вы находитесь в правильном месте, вам выдастся следующая геоточка.')
+                               caption=ct.TEXT26)
 
 
 # рейтинг
@@ -262,7 +262,7 @@ async def get_type_online(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(ct.TEXT25)
     await state.set_state(Form.number_route)
 
-
+# удаление
 @router.message(Form.number_route)
 async def get_number_delete_route(message: Message, state: FSMContext):
     if Rout.type == "online":
@@ -322,7 +322,7 @@ async def process_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
     Rout.points = int(message.text)
     if Rout.points <= 10:
-        Rout.l = 0
+        Rout.counter = 0
         Rout.cords.append(int(message.text))
         await message.answer('Теперь пришлите первую геоточку')
         await state.set_state(Form.lat)

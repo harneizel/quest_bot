@@ -4,7 +4,7 @@ from app.handlers import router, bot
 from app import database as db
 
 async def on_startup(): # подключение бд
-    await db.db_start()
+    db.db_start()
 
 async def main(): # создание бота, роутера
     bot_ls = bot

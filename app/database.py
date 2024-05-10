@@ -2,7 +2,7 @@ import sqlite3 as sq
 
 db = sq.connect('tg.db')
 cur = db.cursor()
-async def db_start():
+def db_start():
     cur.execute("CREATE TABLE IF NOT EXISTS accounts("
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, "    # порядковый уникальный id
                 "tg_id INTEGER, "                           # id в телеграмме
@@ -11,17 +11,29 @@ async def db_start():
                 "get_points INTEGER, "                      # количество собранных геоточек (0 по умолчанию)
                 "bm_id INTEGER, "                           # id сообщения бота которое он изменяет
                 "flag INTEGER, "                            # флаг на отправление локации
-                "flag_1 INTEGER)")                          # флаг на изменение локации
+                "flag_1 INTEGER, "                          # флаг на изменение локации
+                "pass_route)")                              # пройденных маршрутов всего
 
     cur.execute("CREATE TABLE IF NOT EXISTS ofl_routes("    # оффлайн маршруты с описанием
-                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "id INTEGER PRIMARY KEY, "
                 "preview TEXT, "                            # превью (описание двумя-тремя словами)
                 "caption TEXT)")
 
     cur.execute("CREATE TABLE IF NOT EXISTS onl_routes("    # онлайн маршруты с трансляцией геопозиции
-                "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                "id INTEGER PRIMARY KEY, "
                 "preview TEXT, "                            # превью (описание двумя-тремя словами)
-                "number_points INTEGER, "                   # общее количество геоточек, не более 7
+                "number_points INTEGER, "                   # общее количество геоточек, не более 10
+                "capt1 TEXT, "
+                "capt2 TEXT, "
+                "capt3 TEXT, "
+                "capt4 TEXT, "
+                "capt5 TEXT, "
+                "capt6 TEXT, "                          # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+                "capt7 TEXT, "                          # описание для каждой точки, отправляется вместе с ней  #
+                "capt8 TEXT, "                          # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+                "capt9 TEXT, "
+                "capt10 TEXT, "
+                
                 "lat1 REAL, "                            
                 "lon1 REAL, "
                 "lat2 REAL, "
@@ -75,6 +87,7 @@ async def add_offline_rout(mess, mess1 ): #создание оффлайн ма�
 
 async def add_online_rout(mess): #создание онлайн маршрута
     mess = tuple(mess)
+    print(mess)
     cur.execute("INSERT INTO onl_routes (preview, number_points, lat1, lon1, lat2, lon2, lat3, lon3, lat4, lon4, lat5, lon5, lat6, lon6, lat7, lon7, lat8, lon8, lat9, lon9, lat10, lon10) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", mess)
     db.commit()
 
@@ -144,12 +157,20 @@ async def delete_prog(id): # удаляет прогресс
     cur.execute("UPDATE accounts SET type_route=0, chosen_rout=0, get_points=0, flag = 0, flag_1 = 0 WHERE tg_id={key}".format(key=id))
     db.commit()
 
-async def delete_route_onl(id): # удаление оффлайн маршрута
+async def delete_route_onl(id): # удаление онлайн маршрута
     cur.execute("DELETE FROM onl_routes WHERE id = {key}".format(key=id))
+    all_routes = len(cur.execute("SELECT id FROM onl_routes").fetchall())
+    for id_route in range(id+1, all_routes+2): # смена остальных id чтобы шли без пропусков
+        cur.execute("UPDATE onl_routes SET id={second_id} WHERE id = {first_id}".format(first_id=id_route,
+                                                                                        second_id=id_route-1))
     db.commit()
 
-async def delete_route_ofl(id): # удаление онлайн маршрута
+async def delete_route_ofl(id): # удаление оффлайн маршрута
     cur.execute("DELETE FROM ofl_routes WHERE id = {key}".format(key=id))
+    all_routes = len(cur.execute("SELECT id FROM ofl_routes").fetchall())
+    for id_route in range(id + 1, all_routes + 2):  # смена остальных id чтобы шли без пропусков
+        cur.execute("UPDATE onl_routes SET id={second_id} WHERE id = {first_id}".format(first_id=id_route,
+                                                                                        second_id=id_route - 1))
     db.commit()
 
 async def reset_get_points(id):
