@@ -61,7 +61,7 @@ async def cmd_start_db(user_id): # добавление тг id юзера
     user = cur.execute("SELECT * FROM accounts WHERE tg_id == {key}".format(key=user_id)).fetchone()
     if not user:
         cur.execute("INSERT INTO accounts (tg_id) VALUES ({key})".format(key=user_id))
-        cur.execute("UPDATE accounts SET get_points = 0, flag = 0, flag_1 = 0 WHERE tg_id = {key}".format(key=user_id))
+        cur.execute("UPDATE accounts SET get_points = 0, flag = 0, flag_1 = 0, pass_route = 0 WHERE tg_id = {key}".format(key=user_id))
         db.commit()
 
 async def show_flag(user_id): # флаг на отправку геолокации
@@ -173,6 +173,11 @@ async def delete_route_ofl(id): # удаление оффлайн маршрут
                                                                                         second_id=id_route - 1))
     db.commit()
 
-async def reset_get_points(id):
+async def reset_get_points(id): # сбрасывает кол во собранных точек при начале маршрута
     cur.execute("UPDATE accounts SET get_points = 0 WHERE tg_id={key}".format(key=id))
     db.commit()
+
+async def get_pass_route(id): # забирает кол во пройденных маршрутов
+    pass_route = cur.execute("SELECT pass_route FROM accounts WHERE tg_id = {tg_id}".format(tg_id=id)).fetchone()[0]
+    return pass_route
+

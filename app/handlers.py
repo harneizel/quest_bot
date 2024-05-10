@@ -97,8 +97,8 @@ async def chosen_route_onl(message: Message, state: FSMContext):
         number = int(message.text)
         await db.set_number(number, message.from_user.id)
         await state.clear()
-        photo = FSInputFile('instruction.jpg')
-        await message.answer_photo(photo, caption=ct.TEXT8)
+        #photo = FSInputFile('instruction.jpg')
+        await message.answer_photo(photo='https://ibb.co/N74f8X3', caption=ct.TEXT8)
     else:
         await message.answer(ct.TEXT7)
 
@@ -146,11 +146,11 @@ async def check_locate(callback: CallbackQuery):
 
 # изменение сообщения с расстоянием до точки и обработка нахождения точки
 @router.edited_message(F.location)
-async def edited_message_handler(edited_message: Message):
+async def edited_message_handler(edited_message: Message, bot: Bot):
     flag1 = await db.flag1_view(edited_message.from_user.id)
     if flag1 == 1:
         await db.flag1_set0(edited_message.from_user.id)
-        rte_inf = await db.get_cords(edited_message.from_user.id)
+        rte_inf = await db.get_cords(edited_message.from_user.id) # rte_inf - route_info
         cords = (edited_message.location.latitude, edited_message.location.longitude)
         dist = int(geodesic((rte_inf[0], rte_inf[1]), cords).meters)
         if dist > ct.RADIUS:  # если юзер не дошёл до точки
@@ -160,15 +160,19 @@ async def edited_message_handler(edited_message: Message):
                                                        reply_markup=kb.check_loc, message_id=bm_id)
         elif dist <= ct.RADIUS and rte_inf[2] == rte_inf[3]+1:  # если юзер закончил маршрут
             await delete_messages(edited_message.from_user.id)
+            await bot.send_message(chat_id=config.ADMIN_ID,
+                                   text=f"{ct.TEXT11_1} [{edited_message.from_user.first_name}](https://t.me/{edited_message.from_user.username}) {ct.TEXT11_3}{rte_inf[2]} {ct.TEXT11_5} {rte_inf[4]}")
             await edited_message.answer(ct.TEXT15)
             await db.delete_prog(edited_message.from_user.id)
         else:  # если юзер собрал точку
             await delete_messages(edited_message.from_user.id)
             point = await db.plus_get_point(edited_message.from_user.id)
+            await bot.send_message(chat_id=config.ADMIN_ID,
+                                   text=f"{ct.TEXT11_1} [{edited_message.from_user.first_name}](https://t.me/{edited_message.from_user.username}) {ct.TEXT11_3}{point + 1} {ct.TEXT11_4} {rte_inf[4]}")
             await edited_message.answer(f"{ct.TEXT16_1}{point + 1}{ct.TEXT16_2}{point + 2}")
-            a = await db.get_cords(edited_message.from_user.id)
-            await bot.send_location(chat_id=edited_message.from_user.id, latitude=a[0], longitude=a[1])
-            dist = int(geodesic((a[0], a[1]), cords).meters)
+            rte_inf = await db.get_cords(edited_message.from_user.id)
+            await bot.send_location(chat_id=edited_message.from_user.id, latitude=rte_inf[0], longitude=rte_inf[1])
+            dist = int(geodesic((rte_inf[0], rte_inf[1]), cords).meters)
             msg = await edited_message.answer(f"{ct.TEXT13} {dist}", reply_markup=kb.check_loc)
             await db.set_bm_id(edited_message.from_user.id, msg.message_id)
 
@@ -203,7 +207,8 @@ async def back_menu(message: Message):
 # профиль юзера
 @router.message(F.text == ct.BUTTON3)
 async def cmd_my_id(message: Message):
-    await message.answer(f'Ваш ID: {message.from_user.id}\nВаше имя: {message.from_user.first_name}')
+    pass_route = await db.get_pass_route(message.from_user.id)
+    await message.answer(f'{ct.TEXT27_1} {message.from_user.id}\n{ct.TEXT27_2} {message.from_user.first_name}\n{ct.TEXT27_3} {pass_route}')
 
 
 # информация
